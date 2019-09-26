@@ -1,6 +1,5 @@
 #include "network.h"
 #include "pins.h"
-
 #define TIME_DIFF(a,b)     ((int32_t)((uint32_t)(a) - (uint32_t)(b))
 
 void setup()

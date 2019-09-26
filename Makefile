@@ -1,6 +1,6 @@
 BOARD="CONTROLLINO_Boards:avr:controllino_maxi"
 PORT="/dev/ttyACM0"
-NAME=casa
+NAME=home
 
 .PHONY: all upload
  
