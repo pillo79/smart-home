@@ -9,8 +9,8 @@ struct ShellState st;
 
 void netSetup(void)
 {
-	static const byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-	static const IPAddress ip(192, 168, 0, 177);
+	static const byte mac[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 };
+	static const IPAddress ip(192, 168, 1, 252);
 	Ethernet.begin(mac, ip);
 	server.begin();
 }
