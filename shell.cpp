@@ -1,6 +1,7 @@
 #include "pins.h"
 #include "shell.h"
 
+#include <avr/wdt.h>
 #include <Arduino.h>
 #include <stdio.h>
 
@@ -42,7 +43,7 @@ void shell(struct ShellState *s)
 	char *i = s->cmd;
 	char *p = s->reply;
 
-	enum { cmdNone, cmdRead, cmdSet, cmdReset } cmd;
+	enum { cmdNone, cmdRead, cmdSet, cmdReset, cmdInvert, cmdReboot } cmd;
 
 	strip(s->cmd);
 	Serial.println(s->cmd);
@@ -64,6 +65,15 @@ void shell(struct ShellState *s)
 			++i;
 			break;
 
+		case '*':
+			cmd = cmdInvert;
+			++i;
+			break;
+
+		case '@':
+			cmd = cmdReboot;
+			break;
+
 		case 'D':
 		case 'R':
 		case 'I':
@@ -77,12 +87,13 @@ void shell(struct ShellState *s)
 
 	const struct SignalDesc *sig = NULL;
 	switch (cmd) {
-		case cmdNone:
+		default:
 			break;
 
 		case cmdRead:
 		case cmdSet:
 		case cmdReset:
+		case cmdInvert:
 			sig = findSig(i);
 			if (!sig) return;
 			break;
@@ -101,6 +112,17 @@ void shell(struct ShellState *s)
 		case cmdReset:
 			digitalWrite(sig->pin, LOW);
 			p += printSig(p, sig);
+			break;
+
+		case cmdInvert:
+			digitalWrite(sig->pin, digitalRead(sig->pin) ? LOW : HIGH);
+			p += printSig(p, sig);
+			break;
+
+		case cmdReboot:
+			wdt_disable();
+			wdt_enable(WDTO_2S);
+			while(1);
 			break;
 	}
 }
