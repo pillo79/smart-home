@@ -1,7 +1,7 @@
 #include "controllinodevice.h"
 
 #include <errno.h>
-#include <arduino.h>
+#include <Arduino.h>
 
 ControllinoDevice::ControllinoDevice(const char *name)
 	: LogicDevice(name)

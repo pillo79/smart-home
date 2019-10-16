@@ -1,7 +1,7 @@
 #include "hardware.h"
 
-#include "LogicDevice.h"
-#include "ControllinoDevice.h"
+#include "logicdevice.h"
+#include "controllinodevice.h"
 
 #include <Controllino.h>
 
