@@ -1,65 +1,8 @@
-/**
- * @file 	ModbusRtu.h
- * @version     1.21
- * @date        2016.02.21
- * @author 	Samuel Marco i Armengol
- * @contact     sammarcoarmengol@gmail.com
- * @contribution Helium6072
- * @contribution gabrielsan
- *
- * @description
- *  Arduino library for communicating with Modbus devices
- *  over RS232/USB/485 via RTU protocol.
- *
- *  Further information:
- *  http://modbus.org/
- *  http://modbus.org/docs/Modbus_over_serial_line_V1_02.pdf
- *
- * @license
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; version
- *  2.1 of the License.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- * @defgroup setup Modbus Object Instantiation/Initialization
- * @defgroup loop Modbus Object Management
- * @defgroup buffer Modbus Buffer Management
- * @defgroup discrete Modbus Function Codes for Discrete Coils/Inputs
- * @defgroup register Modbus Function Codes for Holding/Input Registers
- *
- */
+#include "ModbusRTU.h"
 
-#include <inttypes.h>
-#include "Arduino.h"
-#include "Print.h"
+#include <Arduino.h>
+#include <Print.h>
 #include <SoftwareSerial.h>
-
-/**
- * @struct modbus_t
- * @brief
- * Master query structure:
- * This includes all the necessary fields to make the Master generate a Modbus query.
- * A Master may keep several of these structures and send them cyclically or
- * use them according to program needs.
- */
-typedef struct
-{
-    uint8_t u8id;          /*!< Slave address between 1 and 247. 0 means broadcast */
-    uint8_t u8fct;         /*!< Function code: 1, 2, 3, 4, 5, 6, 15 or 16 */
-    uint16_t u16RegAdd;    /*!< Address of the first register to access at slave/s */
-    uint16_t u16CoilsNo;   /*!< Number of coils or registers to access */
-    uint16_t *au16reg;     /*!< Pointer to memory image in master */
-}
-modbus_t;
 
 enum
 {
@@ -84,53 +27,6 @@ enum MESSAGE
     BYTE_CNT  //!< byte counter
 };
 
-/**
- * @enum MB_FC
- * @brief
- * Modbus function codes summary.
- * These are the implement function codes either for Master or for Slave.
- *
- * @see also fctsupported
- * @see also modbus_t
- */
-enum MB_FC
-{
-    MB_FC_NONE                     = 0,   /*!< null operator */
-    MB_FC_READ_COILS               = 1,	/*!< FCT=1 -> read coils or digital outputs */
-    MB_FC_READ_DISCRETE_INPUT      = 2,	/*!< FCT=2 -> read digital inputs */
-    MB_FC_READ_REGISTERS           = 3,	/*!< FCT=3 -> read registers or analog outputs */
-    MB_FC_READ_INPUT_REGISTER      = 4,	/*!< FCT=4 -> read analog inputs */
-    MB_FC_WRITE_COIL               = 5,	/*!< FCT=5 -> write single coil or output */
-    MB_FC_WRITE_REGISTER           = 6,	/*!< FCT=6 -> write single register */
-    MB_FC_WRITE_MULTIPLE_COILS     = 15,	/*!< FCT=15 -> write multiple coils or outputs */
-    MB_FC_WRITE_MULTIPLE_REGISTERS = 16	/*!< FCT=16 -> write multiple registers */
-};
-
-enum COM_STATES
-{
-    COM_IDLE                     = 0,
-    COM_WAITING                  = 1
-
-};
-
-enum ERR_LIST
-{
-    ERR_NOT_MASTER                = -1,
-    ERR_POLLING                   = -2,
-    ERR_BUFF_OVERFLOW             = -3,
-    ERR_BAD_CRC                   = -4,
-    ERR_EXCEPTION                 = -5
-};
-
-enum
-{
-    NO_REPLY = 255,
-    EXC_FUNC_CODE = 1,
-    EXC_ADDR_RANGE = 2,
-    EXC_REGS_QUANT = 3,
-    EXC_EXECUTE = 4
-};
-
 const unsigned char fctsupported[] =
 {
     MB_FC_READ_COILS,
@@ -144,76 +40,6 @@ const unsigned char fctsupported[] =
 };
 
 #define T35  5
-#define  MAX_BUFFER  64	//!< maximum size for the communication buffer in bytes
-
-/**
- * @class Modbus
- * @brief
- * Arduino class library for communicating with Modbus devices over
- * USB/RS232/485 (via RTU protocol).
- */
-class Modbus
-{
-private:
-    HardwareSerial *port; //!< Pointer to Serial class object
-    SoftwareSerial *softPort; //!< Pointer to SoftwareSerial class object
-    uint8_t u8id; //!< 0=master, 1..247=slave number
-    uint8_t u8serno; //!< serial port: 0-Serial, 1..3-Serial1..Serial3; 4: use software serial
-    uint8_t u8txenpin; //!< flow control pin: 0=USB or RS-232 mode, >0=RS-485 mode
-    uint8_t u8state;
-    uint8_t u8lastError;
-    uint8_t au8Buffer[MAX_BUFFER];
-    uint8_t u8BufferSize;
-    uint8_t u8lastRec;
-    uint16_t *au16regs;
-    uint16_t u16InCnt, u16OutCnt, u16errCnt;
-    uint16_t u16timeOut;
-    uint32_t u32time, u32timeOut, u32overTime;
-    uint8_t u8regsize;
-
-    void init(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin);
-	void init(uint8_t u8id);
-    void sendTxBuffer();
-    int8_t getRxBuffer();
-    uint16_t calcCRC(uint8_t u8length);
-    uint8_t validateAnswer();
-    uint8_t validateRequest();
-    void get_FC1();
-    void get_FC3();
-    int8_t process_FC1( uint16_t *regs, uint8_t u8size );
-    int8_t process_FC3( uint16_t *regs, uint8_t u8size );
-    int8_t process_FC5( uint16_t *regs, uint8_t u8size );
-    int8_t process_FC6( uint16_t *regs, uint8_t u8size );
-    int8_t process_FC15( uint16_t *regs, uint8_t u8size );
-    int8_t process_FC16( uint16_t *regs, uint8_t u8size );
-    void buildException( uint8_t u8exception ); // build exception message
-
-public:
-    Modbus();
-    Modbus(uint8_t u8id, uint8_t u8serno);
-    Modbus(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin);
-    Modbus(uint8_t u8id);
-    void begin(long u32speed);
-    void begin(SoftwareSerial *sPort, long u32speed);
-	void begin(SoftwareSerial *sPort, long u32speed, uint8_t u8txenpin);
-    //void begin(long u32speed, uint8_t u8config);
-    void begin();
-    void setTimeOut( uint16_t u16timeOut); //!<write communication watch-dog timer
-    uint16_t getTimeOut(); //!<get communication watch-dog timer value
-    boolean getTimeOutState(); //!<get communication watch-dog timer state
-    int8_t query( modbus_t telegram ); //!<only for master
-    int8_t poll(); //!<cyclic poll for master
-    int8_t poll( uint16_t *regs, uint8_t u8size ); //!<cyclic poll for slave
-    uint16_t getInCnt(); //!<number of incoming messages
-    uint16_t getOutCnt(); //!<number of outcoming messages
-    uint16_t getErrCnt(); //!<error counter
-    uint8_t getID(); //!<get slave ID between 1 and 247
-    uint8_t getState();
-    uint8_t getLastError(); //!<get last error message
-    void setID( uint8_t u8id ); //!<write new ID for the slave
-    void setTxendPinOverTime( uint32_t u32overTime );
-    void end(); //!<finish any communication and release serial communication port
-};
 
 /* _____PUBLIC FUNCTIONS_____________________________________________________ */
 
@@ -223,7 +49,7 @@ public:
  *
  * @ingroup setup
  */
-Modbus::Modbus()
+ModbusRTU::ModbusRTU()
 {
     init(0, 0, 0);
 }
@@ -235,11 +61,11 @@ Modbus::Modbus()
  * @param u8id   node address 0=master, 1..247=slave
  * @param u8serno  serial port used 0..3
  * @ingroup setup
- * @overload Modbus::Modbus(uint8_t u8id, uint8_t u8serno)
- * @overload Modbus::Modbus(uint8_t u8id)
- * @overload Modbus::Modbus()
+ * @overload ModbusRTU::ModbusRTU(uint8_t u8id, uint8_t u8serno)
+ * @overload ModbusRTU::ModbusRTU(uint8_t u8id)
+ * @overload ModbusRTU::ModbusRTU()
  */
-Modbus::Modbus(uint8_t u8id, uint8_t u8serno)
+ModbusRTU::ModbusRTU(uint8_t u8id, uint8_t u8serno)
 {
     init(u8id, u8serno, 0);
 }
@@ -253,11 +79,11 @@ Modbus::Modbus(uint8_t u8id, uint8_t u8serno)
  * @param u8serno  serial port used 0..3
  * @param u8txenpin pin for txen RS-485 (=0 means USB/RS232C mode)
  * @ingroup setup
- * @overload Modbus::Modbus(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
- * @overload Modbus::Modbus(uint8_t u8id)
- * @overload Modbus::Modbus()
+ * @overload ModbusRTU::ModbusRTU(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
+ * @overload ModbusRTU::ModbusRTU(uint8_t u8id)
+ * @overload ModbusRTU::ModbusRTU()
  */
-Modbus::Modbus(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
+ModbusRTU::ModbusRTU(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
 {
     init(u8id, u8serno, u8txenpin);
 }
@@ -268,15 +94,15 @@ Modbus::Modbus(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
  * This constructor only specifies u8id (node address) and should be only
  * used if you want to use software serial instead of hardware serial.
  * If you use this constructor you have to begin ModBus object by
- * using "void Modbus::begin(SoftwareSerial *softPort, long u32speed)".
+ * using "void ModbusRTU::begin(SoftwareSerial *softPort, long u32speed)".
  *
  * @param u8id   node address 0=master, 1..247=slave
  * @ingroup setup
- * @overload Modbus::Modbus(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
- * @overload Modbus::Modbus(uint8_t u8id, uint8_t u8serno)
- * @overload Modbus::Modbus()
+ * @overload ModbusRTU::ModbusRTU(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
+ * @overload ModbusRTU::ModbusRTU(uint8_t u8id, uint8_t u8serno)
+ * @overload ModbusRTU::ModbusRTU()
  */
-Modbus::Modbus(uint8_t u8id)
+ModbusRTU::ModbusRTU(uint8_t u8id)
 {
     init(u8id);
 }
@@ -292,7 +118,7 @@ Modbus::Modbus(uint8_t u8id)
  * @param speed   baud rate, in standard increments (300..115200)
  * @ingroup setup
  */
-void Modbus::begin(long u32speed)
+void ModbusRTU::begin(long u32speed)
 {
 
     switch( u8serno )
@@ -344,7 +170,7 @@ void Modbus::begin(long u32speed)
  * @param u32speed   baud rate, in standard increments (300..115200)
  * @ingroup setup
  */
-void Modbus::begin(SoftwareSerial *sPort, long u32speed)
+void ModbusRTU::begin(SoftwareSerial *sPort, long u32speed)
 {
 
     softPort=sPort;
@@ -375,7 +201,7 @@ void Modbus::begin(SoftwareSerial *sPort, long u32speed)
  * @param u8txenpin  pin for txen RS-485 (=0 means USB/RS232C mode)
  * @ingroup setup
  */
-void Modbus::begin(SoftwareSerial *sPort, long u32speed, uint8_t u8txenpin)
+void ModbusRTU::begin(SoftwareSerial *sPort, long u32speed, uint8_t u8txenpin)
 {
 
 	this->u8txenpin=u8txenpin;
@@ -407,7 +233,7 @@ void Modbus::begin(SoftwareSerial *sPort, long u32speed, uint8_t u8txenpin)
  * @param config  data frame settings (data length, parity and stop bits)
  * @ingroup setup
  */
-/* void Modbus::begin(long u32speed,uint8_t u8config)
+/* void ModbusRTU::begin(long u32speed,uint8_t u8config)
 {
 
     switch( u8serno )
@@ -455,10 +281,10 @@ void Modbus::begin(SoftwareSerial *sPort, long u32speed, uint8_t u8txenpin)
  * Sets up the serial port using 19200 baud.
  * Call once class has been instantiated, typically within setup().
  *
- * @overload Modbus::begin(uint16_t u16BaudRate)
+ * @overload ModbusRTU::begin(uint16_t u16BaudRate)
  * @ingroup setup
  */
-void Modbus::begin()
+void ModbusRTU::begin()
 {
     begin(19200);
 }
@@ -470,7 +296,7 @@ void Modbus::begin()
  * @param 	u8id	new slave address between 1 and 247
  * @ingroup setup
  */
-void Modbus::setID( uint8_t u8id)
+void ModbusRTU::setID( uint8_t u8id)
 {
     if (( u8id != 0) && (u8id <= 247))
     {
@@ -488,7 +314,7 @@ void Modbus::setID( uint8_t u8id)
  * @param 	uint32_t	overtime count for txend pin
  * @ingroup setup
  */
-void Modbus::setTxendPinOverTime( uint32_t u32overTime )
+void ModbusRTU::setTxendPinOverTime( uint32_t u32overTime )
 {
     this->u32overTime = u32overTime;
 }
@@ -500,7 +326,7 @@ void Modbus::setTxendPinOverTime( uint32_t u32overTime )
  * @return u8id	current slave address between 1 and 247
  * @ingroup setup
  */
-uint8_t Modbus::getID()
+uint8_t ModbusRTU::getID()
 {
     return this->u8id;
 }
@@ -516,7 +342,7 @@ uint8_t Modbus::getID()
  * @param time-out value (ms)
  * @ingroup setup
  */
-void Modbus::setTimeOut( uint16_t u16timeOut)
+void ModbusRTU::setTimeOut( uint16_t u16timeOut)
 {
     this->u16timeOut = u16timeOut;
 }
@@ -529,7 +355,7 @@ void Modbus::setTimeOut( uint16_t u16timeOut)
  * @return TRUE if millis() > u32timeOut
  * @ingroup loop
  */
-boolean Modbus::getTimeOutState()
+bool ModbusRTU::getTimeOutState()
 {
     return ((unsigned long)(millis() -u32timeOut) > (unsigned long)u16timeOut);
 }
@@ -542,7 +368,7 @@ boolean Modbus::getTimeOutState()
  * @return input messages counter
  * @ingroup buffer
  */
-uint16_t Modbus::getInCnt()
+uint16_t ModbusRTU::getInCnt()
 {
     return u16InCnt;
 }
@@ -555,7 +381,7 @@ uint16_t Modbus::getInCnt()
  * @return transmitted messages counter
  * @ingroup buffer
  */
-uint16_t Modbus::getOutCnt()
+uint16_t ModbusRTU::getOutCnt()
 {
     return u16OutCnt;
 }
@@ -568,7 +394,7 @@ uint16_t Modbus::getOutCnt()
  * @return errors counter
  * @ingroup buffer
  */
-uint16_t Modbus::getErrCnt()
+uint16_t ModbusRTU::getErrCnt()
 {
     return u16errCnt;
 }
@@ -579,7 +405,7 @@ uint16_t Modbus::getErrCnt()
  * @return = 0 IDLE, = 1 WAITING FOR ANSWER
  * @ingroup buffer
  */
-uint8_t Modbus::getState()
+uint8_t ModbusRTU::getState()
 {
     return u8state;
 }
@@ -587,34 +413,34 @@ uint8_t Modbus::getState()
 /**
  * Get the last error in the protocol processor
  *
- * @returnreturn   NO_REPLY = 255      Time-out
- * @return   EXC_FUNC_CODE = 1   Function code not available
- * @return   EXC_ADDR_RANGE = 2  Address beyond available space for Modbus registers
- * @return   EXC_REGS_QUANT = 3  Coils or registers number beyond the available space
+ * @return   MB_NO_REPLY = 255      Time-out
+ * @return   MB_EXC_FUNC_CODE = 1   Function code not available
+ * @return   MB_EXC_ADDR_RANGE = 2  Address beyond available space for ModbusRTU registers
+ * @return   MB_EXC_REGS_QUANT = 3  Coils or registers number beyond the available space
  * @ingroup buffer
  */
-uint8_t Modbus::getLastError()
+uint8_t ModbusRTU::getLastError()
 {
     return u8lastError;
 }
 
 /**
  * @brief
- * *** Only Modbus Master ***
- * Generate a query to an slave with a modbus_t telegram structure
- * The Master must be in COM_IDLE mode. After it, its state would be COM_WAITING.
+ * *** Only ModbusRTU Master ***
+ * Generate a query to an slave with a modbus_msg_t telegram structure
+ * The Master must be in MB_COM_IDLE mode. After it, its state would be MB_COM_WAITING.
  * This method has to be called only in loop() section.
  *
- * @see modbus_t
- * @param modbus_t  modbus telegram structure (id, fct, ...)
+ * @see modbus_msg_t
+ * @param modbus_msg_t  modbus telegram structure (id, fct, ...)
  * @ingroup loop
  * @todo finish function 15
  */
-int8_t Modbus::query( modbus_t telegram )
+int8_t ModbusRTU::query( modbus_msg_t telegram )
 {
     uint8_t u8regsno, u8bytesno;
     if (u8id!=0) return -2;
-    if (u8state != COM_IDLE) return -1;
+    if (u8state != MB_COM_IDLE) return -1;
 
     if ((telegram.u8id==0) || (telegram.u8id>247)) return -3;
 
@@ -669,7 +495,7 @@ int8_t Modbus::query( modbus_t telegram )
             else
             {
                 au8Buffer[ u8BufferSize ] = highByte( au16regs[ i/2] );
-            }          
+            }
             u8BufferSize++;
         }
         break;
@@ -691,26 +517,26 @@ int8_t Modbus::query( modbus_t telegram )
     }
 
     sendTxBuffer();
-    u8state = COM_WAITING;
+    u8state = MB_COM_WAITING;
     u8lastError = 0;
     return 0;
 }
 
 /**
- * @brief *** Only for Modbus Master ***
+ * @brief *** Only for ModbusRTU Master ***
  * This method checks if there is any incoming answer if pending.
- * If there is no answer, it would change Master state to COM_IDLE.
+ * If there is no answer, it would change Master state to MB_COM_IDLE.
  * This method must be called only at loop section.
  * Avoid any delay() function.
  *
  * Any incoming data would be redirected to au16regs pointer,
- * as defined in its modbus_t query telegram.
+ * as defined in its modbus_msg_t query telegram.
  *
  * @params	nothing
  * @return errors counter
  * @ingroup loop
  */
-int8_t Modbus::poll()
+int8_t ModbusRTU::poll()
 {
     // check if there is any incoming frame
 	uint8_t u8current;
@@ -721,8 +547,8 @@ int8_t Modbus::poll()
 
     if ((unsigned long)(millis() -u32timeOut) > (unsigned long)u16timeOut)
     {
-        u8state = COM_IDLE;
-        u8lastError = NO_REPLY;
+        u8state = MB_COM_IDLE;
+        u8lastError = MB_NO_REPLY;
         u16errCnt++;
         return 0;
     }
@@ -743,7 +569,7 @@ int8_t Modbus::poll()
     int8_t i8state = getRxBuffer();
     if (i8state < 6) //7 was incorrect for functions 1 and 2 the smallest frame could be 6 bytes long
     {
-        u8state = COM_IDLE;
+        u8state = MB_COM_IDLE;
         u16errCnt++;
         return i8state;
     }
@@ -752,7 +578,7 @@ int8_t Modbus::poll()
     uint8_t u8exception = validateAnswer();
     if (u8exception != 0)
     {
-        u8state = COM_IDLE;
+        u8state = MB_COM_IDLE;
         return u8exception;
     }
 
@@ -778,13 +604,13 @@ int8_t Modbus::poll()
     default:
         break;
     }
-    u8state = COM_IDLE;
+    u8state = MB_COM_IDLE;
     return u8BufferSize;
 }
 
 /**
  * @brief
- * *** Only for Modbus Slave ***
+ * *** Only for ModbusRTU Slave ***
  * This method checks if there is any incoming query
  * Afterwards, it would shoot a validation routine plus a register query
  * Avoid any delay() function !!!!
@@ -795,7 +621,7 @@ int8_t Modbus::poll()
  * @return 0 if no query, 1..4 if communication error, >4 if correct query processed
  * @ingroup loop
  */
-int8_t Modbus::poll( uint16_t *regs, uint8_t u8size )
+int8_t ModbusRTU::poll( uint16_t *regs, uint8_t u8size )
 {
 
     au16regs = regs;
@@ -832,7 +658,7 @@ int8_t Modbus::poll( uint16_t *regs, uint8_t u8size )
     uint8_t u8exception = validateRequest();
     if (u8exception > 0)
     {
-        if (u8exception != NO_REPLY)
+        if (u8exception != MB_NO_REPLY)
         {
             buildException( u8exception );
             sendTxBuffer();
@@ -875,7 +701,7 @@ int8_t Modbus::poll( uint16_t *regs, uint8_t u8size )
 
 /* _____PRIVATE FUNCTIONS_____________________________________________________ */
 
-void Modbus::init(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
+void ModbusRTU::init(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
 {
     this->u8id = u8id;
     this->u8serno = u8serno;
@@ -884,7 +710,7 @@ void Modbus::init(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
     this->u32overTime = 0;
 }
 
-void Modbus::init(uint8_t u8id)
+void ModbusRTU::init(uint8_t u8id)
 {
     this->u8id = u8id;
     this->u8serno = 4;
@@ -895,12 +721,12 @@ void Modbus::init(uint8_t u8id)
 
 /**
  * @brief
- * This method moves Serial buffer data to the Modbus au8Buffer.
+ * This method moves Serial buffer data to the ModbusRTU au8Buffer.
  *
- * @return buffer size if OK, ERR_BUFF_OVERFLOW if u8BufferSize >= MAX_BUFFER
+ * @return buffer size if OK, MB_ERR_BUFF_OVERFLOW if u8BufferSize >= MB_MAX_BUFFER
  * @ingroup buffer
  */
-int8_t Modbus::getRxBuffer()
+int8_t ModbusRTU::getRxBuffer()
 {
     boolean bBuffOverflow = false;
 
@@ -913,7 +739,7 @@ int8_t Modbus::getRxBuffer()
             au8Buffer[ u8BufferSize ] = port->read();
             u8BufferSize ++;
 
-            if (u8BufferSize >= MAX_BUFFER) bBuffOverflow = true;
+            if (u8BufferSize >= MB_MAX_BUFFER) bBuffOverflow = true;
         }
     else
         while ( softPort->available() )
@@ -921,14 +747,14 @@ int8_t Modbus::getRxBuffer()
             au8Buffer[ u8BufferSize ] = softPort->read();
             u8BufferSize ++;
 
-            if (u8BufferSize >= MAX_BUFFER) bBuffOverflow = true;
+            if (u8BufferSize >= MB_MAX_BUFFER) bBuffOverflow = true;
         }
     u16InCnt++;
 
     if (bBuffOverflow)
     {
         u16errCnt++;
-        return ERR_BUFF_OVERFLOW;
+        return MB_ERR_BUFF_OVERFLOW;
     }
     return u8BufferSize;
 }
@@ -945,7 +771,7 @@ int8_t Modbus::getRxBuffer()
  * @return nothing
  * @ingroup buffer
  */
-void Modbus::sendTxBuffer()
+void ModbusRTU::sendTxBuffer()
 {
     // append CRC to message
     uint16_t u16crc = calcCRC( u8BufferSize );
@@ -953,7 +779,7 @@ void Modbus::sendTxBuffer()
     u8BufferSize++;
     au8Buffer[ u8BufferSize ] = u16crc & 0x00ff;
     u8BufferSize++;
-	
+
     if (u8txenpin > 1)
     {
         // set RS485 transceiver to transmit mode
@@ -998,7 +824,7 @@ void Modbus::sendTxBuffer()
  * @return uint16_t calculated CRC value for the message
  * @ingroup buffer
  */
-uint16_t Modbus::calcCRC(uint8_t u8length)
+uint16_t ModbusRTU::calcCRC(uint8_t u8length)
 {
     unsigned int temp, temp2, flag;
     temp = 0xFFFF;
@@ -1029,7 +855,7 @@ uint16_t Modbus::calcCRC(uint8_t u8length)
  * @return 0 if OK, EXCEPTION if anything fails
  * @ingroup buffer
  */
-uint8_t Modbus::validateRequest()
+uint8_t ModbusRTU::validateRequest()
 {
     // check message crc vs calculated crc
     uint16_t u16MsgCRC =
@@ -1038,7 +864,7 @@ uint8_t Modbus::validateRequest()
     if ( calcCRC( u8BufferSize-2 ) != u16MsgCRC )
     {
         u16errCnt ++;
-        return NO_REPLY;
+        return MB_NO_REPLY;
     }
 
     // check fct code
@@ -1054,7 +880,7 @@ uint8_t Modbus::validateRequest()
     if (!isSupported)
     {
         u16errCnt ++;
-        return EXC_FUNC_CODE;
+        return MB_EXC_FUNC_CODE;
     }
 
     // check start address & nb range
@@ -1068,17 +894,17 @@ uint8_t Modbus::validateRequest()
         u16regs = word( au8Buffer[ ADD_HI ], au8Buffer[ ADD_LO ]) / 16;
         u16regs += word( au8Buffer[ NB_HI ], au8Buffer[ NB_LO ]) /16;
         u8regs = (uint8_t) u16regs;
-        if (u8regs > u8regsize) return EXC_ADDR_RANGE;
+        if (u8regs > u8regsize) return MB_EXC_ADDR_RANGE;
         break;
     case MB_FC_WRITE_COIL:
         u16regs = word( au8Buffer[ ADD_HI ], au8Buffer[ ADD_LO ]) / 16;
         u8regs = (uint8_t) u16regs;
-        if (u8regs > u8regsize) return EXC_ADDR_RANGE;
+        if (u8regs > u8regsize) return MB_EXC_ADDR_RANGE;
         break;
     case MB_FC_WRITE_REGISTER :
         u16regs = word( au8Buffer[ ADD_HI ], au8Buffer[ ADD_LO ]);
         u8regs = (uint8_t) u16regs;
-        if (u8regs > u8regsize) return EXC_ADDR_RANGE;
+        if (u8regs > u8regsize) return MB_EXC_ADDR_RANGE;
         break;
     case MB_FC_READ_REGISTERS :
     case MB_FC_READ_INPUT_REGISTER :
@@ -1086,7 +912,7 @@ uint8_t Modbus::validateRequest()
         u16regs = word( au8Buffer[ ADD_HI ], au8Buffer[ ADD_LO ]);
         u16regs += word( au8Buffer[ NB_HI ], au8Buffer[ NB_LO ]);
         u8regs = (uint8_t) u16regs;
-        if (u8regs > u8regsize) return EXC_ADDR_RANGE;
+        if (u8regs > u8regsize) return MB_EXC_ADDR_RANGE;
         break;
     }
     return 0; // OK, no exception code thrown
@@ -1099,7 +925,7 @@ uint8_t Modbus::validateRequest()
  * @return 0 if OK, EXCEPTION if anything fails
  * @ingroup buffer
  */
-uint8_t Modbus::validateAnswer()
+uint8_t ModbusRTU::validateAnswer()
 {
     // check message crc vs calculated crc
     uint16_t u16MsgCRC =
@@ -1108,14 +934,14 @@ uint8_t Modbus::validateAnswer()
     if ( calcCRC( u8BufferSize-2 ) != u16MsgCRC )
     {
         u16errCnt ++;
-        return NO_REPLY;
+        return MB_NO_REPLY;
     }
 
     // check exception
     if ((au8Buffer[ FUNC ] & 0x80) != 0)
     {
         u16errCnt ++;
-        return ERR_EXCEPTION;
+        return MB_ERR_EXCEPTION;
     }
 
     // check fct code
@@ -1131,7 +957,7 @@ uint8_t Modbus::validateAnswer()
     if (!isSupported)
     {
         u16errCnt ++;
-        return EXC_FUNC_CODE;
+        return MB_EXC_FUNC_CODE;
     }
 
     return 0; // OK, no exception code thrown
@@ -1143,7 +969,7 @@ uint8_t Modbus::validateAnswer()
  *
  * @ingroup buffer
  */
-void Modbus::buildException( uint8_t u8exception )
+void ModbusRTU::buildException( uint8_t u8exception )
 {
     uint8_t u8func = au8Buffer[ FUNC ];  // get the original FUNC code
 
@@ -1160,22 +986,22 @@ void Modbus::buildException( uint8_t u8exception )
  * @ingroup register
  * TODO: finish its implementation
  */
-void Modbus::get_FC1()
+void ModbusRTU::get_FC1()
 {
     uint8_t u8byte, i;
     u8byte = 3;
      for (i=0; i< au8Buffer[2]; i++) {
-        
+
         if(i%2)
         {
             au16regs[i/2]= word(au8Buffer[i+u8byte], lowByte(au16regs[i/2]));
         }
         else
         {
-           
-            au16regs[i/2]= word(highByte(au16regs[i/2]), au8Buffer[i+u8byte]); 
+
+            au16regs[i/2]= word(highByte(au16regs[i/2]), au8Buffer[i+u8byte]);
         }
-        
+
      }
 }
 
@@ -1185,7 +1011,7 @@ void Modbus::get_FC1()
  *
  * @ingroup register
  */
-void Modbus::get_FC3()
+void ModbusRTU::get_FC3()
 {
     uint8_t u8byte, i;
     u8byte = 3;
@@ -1207,7 +1033,7 @@ void Modbus::get_FC3()
  * @return u8BufferSize Response to master length
  * @ingroup discrete
  */
-int8_t Modbus::process_FC1( uint16_t *regs, uint8_t /*u8size*/ )
+int8_t ModbusRTU::process_FC1( uint16_t *regs, uint8_t /*u8size*/ )
 {
     uint8_t u8currentRegister, u8currentBit, u8bytesno, u8bitsno;
     uint8_t u8CopyBufferSize;
@@ -1261,7 +1087,7 @@ int8_t Modbus::process_FC1( uint16_t *regs, uint8_t /*u8size*/ )
  * @return u8BufferSize Response to master length
  * @ingroup register
  */
-int8_t Modbus::process_FC3( uint16_t *regs, uint8_t /*u8size*/ )
+int8_t ModbusRTU::process_FC3( uint16_t *regs, uint8_t /*u8size*/ )
 {
 
     uint8_t u8StartAdd = word( au8Buffer[ ADD_HI ], au8Buffer[ ADD_LO ] );
@@ -1293,7 +1119,7 @@ int8_t Modbus::process_FC3( uint16_t *regs, uint8_t /*u8size*/ )
  * @return u8BufferSize Response to master length
  * @ingroup discrete
  */
-int8_t Modbus::process_FC5( uint16_t *regs, uint8_t /*u8size*/ )
+int8_t ModbusRTU::process_FC5( uint16_t *regs, uint8_t /*u8size*/ )
 {
     uint8_t u8currentRegister, u8currentBit;
     uint8_t u8CopyBufferSize;
@@ -1326,7 +1152,7 @@ int8_t Modbus::process_FC5( uint16_t *regs, uint8_t /*u8size*/ )
  * @return u8BufferSize Response to master length
  * @ingroup register
  */
-int8_t Modbus::process_FC6( uint16_t *regs, uint8_t /*u8size*/ )
+int8_t ModbusRTU::process_FC6( uint16_t *regs, uint8_t /*u8size*/ )
 {
 
     uint8_t u8add = word( au8Buffer[ ADD_HI ], au8Buffer[ ADD_LO ] );
@@ -1352,7 +1178,7 @@ int8_t Modbus::process_FC6( uint16_t *regs, uint8_t /*u8size*/ )
  * @return u8BufferSize Response to master length
  * @ingroup discrete
  */
-int8_t Modbus::process_FC15( uint16_t *regs, uint8_t /*u8size*/ )
+int8_t ModbusRTU::process_FC15( uint16_t *regs, uint8_t /*u8size*/ )
 {
     uint8_t u8currentRegister, u8currentBit, u8frameByte, u8bitsno;
     uint8_t u8CopyBufferSize;
@@ -1408,7 +1234,7 @@ int8_t Modbus::process_FC15( uint16_t *regs, uint8_t /*u8size*/ )
  * @return u8BufferSize Response to master length
  * @ingroup register
  */
-int8_t Modbus::process_FC16( uint16_t *regs, uint8_t /*u8size*/ )
+int8_t ModbusRTU::process_FC16( uint16_t *regs, uint8_t /*u8size*/ )
 {
     uint8_t u8StartAdd = au8Buffer[ ADD_HI ] << 8 | au8Buffer[ ADD_LO ];
     uint8_t u8regsno = au8Buffer[ NB_HI ] << 8 | au8Buffer[ NB_LO ];
