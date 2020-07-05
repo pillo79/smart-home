@@ -1,3 +1,5 @@
 *.hex
 *.elf
 *.bin
+*.eep
+version.h

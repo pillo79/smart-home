@@ -1,14 +1,18 @@
 BOARD="CONTROLLINO_Boards:avr:controllino_maxi"
 PORT="/dev/ttyACM0"
-NAME=home
+NAME=smart-home.ino
 
 .PHONY: all tftp upload 
 
 all: $(NAME).elf
 
 # also creates .hex and .bin
-$(NAME).elf: $(NAME).ino $(wildcard *.h) $(wildcard *.cpp)
-	arduino-cli compile -v -b $(BOARD) -o $(NAME)
+$(NAME).elf: $(NAME) $(wildcard *.h) $(wildcard *.cpp)
+	echo '#define BUILD_TAG "$(shell git describe --always --dirty)"' > version.h
+	echo '#define BUILD_DATE "$(shell date +%Y-%m-%d)"' >> version.h
+	echo '#define BUILD_TIME "$(shell date +%H:%M:%S)"' >> version.h
+	arduino-cli compile -b $(BOARD) --output-dir .
+	#arduino-cli compile -b $(BOARD) -o $(NAME) 2>&1 | sed -e 's!/tmp/arduino-sketch-.*/sketch/!!'
 	objcopy -I ihex -O binary $(NAME).hex $(NAME).bin
 
 tftp: $(NAME).elf

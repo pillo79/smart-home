@@ -1,5 +1,6 @@
 #include "pins.h"
 #include "shell.h"
+#include "version.h"
 
 #include <avr/wdt.h>
 #include <Arduino.h>
@@ -46,9 +47,13 @@ void shell(struct ShellState *s)
 	enum { cmdNone, cmdRead, cmdSet, cmdReset, cmdInvert, cmdReboot } cmd;
 
 	strip(s->cmd);
-	Serial.println(s->cmd);
 
 	switch (*i) {
+		case 'V':
+			strcpy(p, "Date: " BUILD_DATE "\nTime: " BUILD_TIME "\nFw rev: " BUILD_TAG "\n");
+			p += strlen(p);
+			return;
+
 		case '\0':
 			p += printTable(p, DIGIN_SIGS);
 			p += printTable(p, DIGOUT_SIGS);
