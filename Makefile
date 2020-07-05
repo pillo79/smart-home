@@ -12,7 +12,6 @@ $(NAME).elf: $(NAME) $(wildcard *.h) $(wildcard *.cpp)
 	echo '#define BUILD_DATE "$(shell date +%Y-%m-%d)"' >> version.h
 	echo '#define BUILD_TIME "$(shell date +%H:%M:%S)"' >> version.h
 	arduino-cli compile -b $(BOARD) --output-dir .
-	#arduino-cli compile -b $(BOARD) -o $(NAME) 2>&1 | sed -e 's!/tmp/arduino-sketch-.*/sketch/!!'
 	objcopy -I ihex -O binary $(NAME).hex $(NAME).bin
 
 tftp: $(NAME).elf

@@ -1,17 +1,16 @@
 #include "control.h"
 
 #include "hardware.h"
+#include "modbus.h"
 
 void controlSetup()
 {
-
+	modbusSetup();
 }
 
 void controlLoop()
 {
-	HW::updateInputs();
+	modbusPoll();
 
 	HW::outBoilerHeatRequest.setValue(HW::inTempLow.getValue());
-
-	HW::updateOutputs();
 }

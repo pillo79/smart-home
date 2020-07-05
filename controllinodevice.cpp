@@ -14,21 +14,6 @@ ControllinoDevice::~ControllinoDevice()
 
 }
 
-int ControllinoDevice::updateInputs()
-{
-	return 0;
-}
-
-int ControllinoDevice::updateOutputs()
-{
-	return 0;
-}
-
-bool ControllinoDevice::failing()
-{
-	return false;
-}
-
 int ControllinoDevice::getDigInput(int input)
 {
 	return digitalRead(input);

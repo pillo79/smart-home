@@ -9,10 +9,6 @@ class ControllinoDevice : public LogicDevice {
 		ControllinoDevice(const char *name);
 		virtual ~ControllinoDevice();
 
-		virtual int updateInputs();
-		virtual int updateOutputs();
-		virtual bool failing();
-
 		virtual int getDigInput(int input);
 		virtual int getDigOutput(int output);
 		virtual int setDigOutput(int output, bool value);

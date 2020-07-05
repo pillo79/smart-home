@@ -13,21 +13,6 @@ LogicDevice::~LogicDevice()
 
 }
 
-int LogicDevice::updateInputs()
-{
-	return 0;
-}
-
-int LogicDevice::updateOutputs()
-{
-	return 0;
-}
-
-bool LogicDevice::failing()
-{
-	return false;
-}
-
 int LogicDevice::getDigInput(int input)
 {
 	UNUSED(input);
