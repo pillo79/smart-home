@@ -15,9 +15,8 @@ $(NAME).elf: $(NAME) $(wildcard *.h) $(wildcard *.cpp)
 	objcopy -I ihex -O binary $(NAME).hex $(NAME).bin
 
 tftp: $(NAME).elf
-	echo "@" | nc -w0 192.168.1.252 23
-	sleep 5
-	(echo "binary" ; echo "put $(NAME).bin") | tftp 192.168.1.252
+	echo "@" | nc -w0 192.168.1.252 23 && sleep 3 || true
+	(echo "binary" ; echo "trace" ; echo "verbose" ; echo "put $(NAME).bin") | tftp 192.168.1.252
 
 upload: $(NAME).elf
 	arduino-cli upload -v -b $(BOARD) -p $(PORT) -i $(NAME)
