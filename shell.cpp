@@ -1,31 +1,28 @@
 #include "pins.h"
 #include "shell.h"
+#include "network.h"
 #include "version.h"
 
 #include <avr/wdt.h>
 #include <Arduino.h>
 #include <stdio.h>
 
-int printTable(char *buf, const struct SignalDesc *table)
+void printTable(const struct SignalDesc *table)
 {
-	char *p = buf;
+	for (const struct SignalDesc *sig = table; sig->name; sig++) {
+		lprintf("%4s", sig->name);
+	}
+	lprintf("\n");
 
 	for (const struct SignalDesc *sig = table; sig->name; sig++) {
-		p+=sprintf(p, "%4s", sig->name);
+		lprintf("%4i", (digitalRead(sig->pin) == HIGH) ? 1 : 0);
 	}
-	p+=sprintf(p, "\n");
-
-	for (const struct SignalDesc *sig = table; sig->name; sig++) {
-		p+=sprintf(p, "%4i", (digitalRead(sig->pin) == HIGH) ? 1 : 0);
-	}
-	p+=sprintf(p, "\n");
-
-	return p-buf;
+	lprintf("\n");
 }
 
-int printSig(char *buf, const struct SignalDesc *sig)
+void printSig(const struct SignalDesc *sig)
 {
-	return sprintf(buf, "%4s\n%4i\n", sig->name, (digitalRead(sig->pin) == HIGH) ? 1 : 0);
+	lprintf("%4s\n%4i\n", sig->name, (digitalRead(sig->pin) == HIGH) ? 1 : 0);
 }
 
 static void strip(char *msg) {
@@ -38,26 +35,23 @@ static void strip(char *msg) {
 	*o = '\0';
 }
 
-void shell(struct ShellState *s)
+void shell(char *msg)
 {
-	s->reply[0] = '\0';
-	char *i = s->cmd;
-	char *p = s->reply;
+	char *i = msg;
 
 	enum { cmdNone, cmdRead, cmdSet, cmdReset, cmdInvert, cmdReboot } cmd;
 
-	strip(s->cmd);
+	strip(msg);
 
 	switch (*i) {
 		case 'V':
-			strcpy(p, "Date: " BUILD_DATE "\nTime: " BUILD_TIME "\nFw rev: " BUILD_TAG "\n");
-			p += strlen(p);
+			lprintf("Date: " BUILD_DATE "\nTime: " BUILD_TIME "\nFw rev: " BUILD_TAG "\n");
 			return;
 
 		case '\0':
-			p += printTable(p, DIGIN_SIGS);
-			p += printTable(p, DIGOUT_SIGS);
-			p += printTable(p, RLYOUT_SIGS);
+			printTable(DIGIN_SIGS);
+			printTable(DIGOUT_SIGS);
+			printTable(RLYOUT_SIGS);
 			return;
 
 		case '+':
@@ -106,22 +100,22 @@ void shell(struct ShellState *s)
 
 	switch (cmd) {
 		case cmdRead:
-			p += printSig(p, sig);
+			printSig(sig);
 			break;
 
 		case cmdSet:
 			digitalWrite(sig->pin, HIGH);
-			p += printSig(p, sig);
+			printSig(sig);
 			break;
 
 		case cmdReset:
 			digitalWrite(sig->pin, LOW);
-			p += printSig(p, sig);
+			printSig(sig);
 			break;
 
 		case cmdInvert:
 			digitalWrite(sig->pin, digitalRead(sig->pin) ? LOW : HIGH);
-			p += printSig(p, sig);
+			printSig(sig);
 			break;
 
 		case cmdReboot:

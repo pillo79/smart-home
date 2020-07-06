@@ -7,7 +7,7 @@
 EthernetServer server(23);
 EthernetClient client;
 
-struct ShellState st;
+char shell_cmd[128];
 
 char logBuf[LOGSIZE];
 int logWr, logEob, logRd;
@@ -59,7 +59,7 @@ void lprintf(const char *fmt, ...)
 	}
 
 	if (logRd >= logEob)
-		logEob = logRd+1;
+		logEob = logRd;
 }
 
 void netSetup(void)
@@ -89,14 +89,20 @@ void netLoop()
 	}
 
 	if (client.available()) {
-		int msglen = client.read(st.cmd, sizeof(st.cmd));
-		st.cmd[msglen] = '\0';
+		int msglen = client.read(shell_cmd, sizeof(shell_cmd));
+		shell_cmd[msglen] = '\0';
 
-		shell(&st);
-		int len = strlen(st.reply);
-		if (len) {
-			client.write(st.reply, len);
+		shell(shell_cmd);
+	}
+
+	if (logRd != logWr) {
+		if (logRd > logWr) {
+			client.write(logBuf+logRd, logEob-logRd);
+			logRd = 0;
+			logEob = LOGSIZE;
 		}
+		client.write(logBuf+logRd, logWr-logRd);
+		logRd = logWr;
 	}
 
 	if (!client.connected())
