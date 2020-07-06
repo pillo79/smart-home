@@ -1,5 +1,6 @@
 #include "network.h"
 #include "shell.h"
+#include "log.h"
 
 #include <Ethernet.h>
 #include <stdarg.h>

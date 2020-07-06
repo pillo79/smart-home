@@ -1,6 +1,6 @@
 #include "pins.h"
 #include "shell.h"
-#include "network.h"
+#include "log.h"
 #include "version.h"
 
 #include <avr/wdt.h>
