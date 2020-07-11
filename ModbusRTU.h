@@ -91,10 +91,10 @@ enum MB_COM_STATES
 
 enum MB_ERR_LIST
 {
-	MB_ERR_NOT_MASTER                = -1,
-	MB_ERR_POLLING                   = -2,
+//	MB_ERR_NOT_MASTER                = -1,
+//	MB_ERR_POLLING                   = -2,
 	MB_ERR_BUFF_OVERFLOW             = -3,
-	MB_ERR_BAD_CRC                   = -4,
+//	MB_ERR_BAD_CRC                   = -4,
 	MB_ERR_EXCEPTION                 = -5
 };
 
@@ -102,9 +102,9 @@ enum
 {
 	MB_NO_REPLY = 255,
 	MB_EXC_FUNC_CODE = 1,
-	MB_EXC_ADDR_RANGE = 2,
-	MB_EXC_REGS_QUANT = 3,
-	MB_EXC_EXECUTE = 4
+//	MB_EXC_ADDR_RANGE = 2,
+//	MB_EXC_REGS_QUANT = 3,
+//	MB_EXC_EXECUTE = 4
 };
 
 #define  MB_MAX_BUFFER  64	//!< maximum size for the communication buffer in bytes
@@ -121,7 +121,6 @@ class ModbusRTU
 {
 	private:
 		HardwareSerial *port; //!< Pointer to Serial class object
-		uint8_t u8id; //!< 0=master, 1..247=slave number
 		uint8_t u8state;
 		uint8_t u8lastError;
 		uint8_t au8Buffer[MB_MAX_BUFFER];
@@ -130,27 +129,18 @@ class ModbusRTU
 		uint16_t *au16regs;
 		uint16_t u16InCnt, u16OutCnt, u16errCnt;
 		uint16_t u16timeOut;
-		uint32_t u32time, u32timeOut, u32overTime;
+		uint32_t u32lastCharTime, u32xferStartTime, u32overTime;
 		uint8_t u8regsize;
 
-		void init(uint8_t u8id);
 		void sendTxBuffer();
 		int8_t getRxBuffer();
 		uint16_t calcCRC(uint8_t u8length);
 		uint8_t validateAnswer();
-		uint8_t validateRequest();
 		void get_FC1();
 		void get_FC3();
-		int8_t process_FC1( uint16_t *regs, uint8_t u8size );
-		int8_t process_FC3( uint16_t *regs, uint8_t u8size );
-		int8_t process_FC5( uint16_t *regs, uint8_t u8size );
-		int8_t process_FC6( uint16_t *regs, uint8_t u8size );
-		int8_t process_FC15( uint16_t *regs, uint8_t u8size );
-		int8_t process_FC16( uint16_t *regs, uint8_t u8size );
-		void buildException( uint8_t u8exception ); // build exception message
 
 	public:
-		ModbusRTU(uint8_t u8id);
+		ModbusRTU();
 		void begin(long u32speed);
 		void begin(long u32speed, uint8_t u8config);
 		void setTimeOut( uint16_t u16timeOut); //!<write communication watch-dog timer
