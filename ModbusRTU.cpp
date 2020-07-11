@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <Print.h>
 
+#include "log.h"
+
 #define RS485_PIN_DE      0b01000000
 #define RS485_PIN_RE      0b00100000
 #define RS485_DIR_REG     DDRJ
@@ -358,6 +360,12 @@ int8_t ModbusRTU::poll()
 	// transfer Serial buffer frame to auBuffer
 	u8lastRec = 0;
 	int8_t i8state = getRxBuffer();
+#ifdef DEBUG_UART
+	for (int i=0; i<i8state; ++i)
+		lprintf(" %02x", au8Buffer[i]);
+	lprintf("\n");
+#endif
+
 	if (i8state < 6)
 	{
 		u8state = MB_COM_IDLE;
@@ -525,7 +533,11 @@ uint8_t ModbusRTU::validateAnswer()
 	uint16_t u16MsgCRC =
 		((au8Buffer[u8BufferSize - 2] << 8)
 		 | au8Buffer[u8BufferSize - 1]); // combine the crc Low & High bytes
-	if ( calcCRC( u8BufferSize-2 ) != u16MsgCRC )
+	uint16_t u16CalcCRC = calcCRC( u8BufferSize-2 );
+#ifdef DEBUG_UART
+	lprintf("len %i, crc_msg %04x, crc_calc %04x\n", u8BufferSize, u16MsgCRC, u16CalcCRC);
+#endif
+	if ( u16CalcCRC != u16MsgCRC )
 	{
 		u16errCnt ++;
 		return MB_NO_REPLY;
