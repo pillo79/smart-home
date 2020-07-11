@@ -19,8 +19,8 @@ static const modbus_msg_t *cur_msgs;
 
 void modbusSetup()
 {
-	mb.begin(19200);
-	mb.setTimeOut(100);
+	mb.begin(19200, SERIAL_8N2);
+	mb.setTimeOut(50);
 	cur_state = MB_INIT;
 }
 
