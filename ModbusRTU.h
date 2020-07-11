@@ -122,8 +122,6 @@ class ModbusRTU
 	private:
 		HardwareSerial *port; //!< Pointer to Serial class object
 		uint8_t u8id; //!< 0=master, 1..247=slave number
-		uint8_t u8serno; //!< serial port: 0-Serial, 1..3-Serial1..Serial3; 4: use software serial
-		uint8_t u8txenpin; //!< flow control pin: 0=USB or RS-232 mode, >0=RS-485 mode
 		uint8_t u8state;
 		uint8_t u8lastError;
 		uint8_t au8Buffer[MB_MAX_BUFFER];
@@ -135,7 +133,6 @@ class ModbusRTU
 		uint32_t u32time, u32timeOut, u32overTime;
 		uint8_t u8regsize;
 
-		void init(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin);
 		void init(uint8_t u8id);
 		void sendTxBuffer();
 		int8_t getRxBuffer();
@@ -153,9 +150,7 @@ class ModbusRTU
 		void buildException( uint8_t u8exception ); // build exception message
 
 	public:
-		ModbusRTU();
-		ModbusRTU(uint8_t u8id, uint8_t u8serno);
-		ModbusRTU(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin);
+		ModbusRTU(uint8_t u8id);
 		void begin(long u32speed);
 		void begin(long u32speed, uint8_t u8config);
 		void setTimeOut( uint16_t u16timeOut); //!<write communication watch-dog timer

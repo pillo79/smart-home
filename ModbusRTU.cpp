@@ -45,47 +45,14 @@ const unsigned char fctsupported[] =
 
 /**
  * @brief
- * Default Constructor for Master through Serial
- *
- * @ingroup setup
- */
-ModbusRTU::ModbusRTU()
-{
-	init(0, 0, 0);
-}
-
-/**
- * @brief
  * Full constructor for a Master/Slave through USB/RS232C
  *
  * @param u8id   node address 0=master, 1..247=slave
- * @param u8serno  serial port used 0..3
  * @ingroup setup
- * @overload ModbusRTU::ModbusRTU(uint8_t u8id, uint8_t u8serno)
- * @overload ModbusRTU::ModbusRTU(uint8_t u8id)
- * @overload ModbusRTU::ModbusRTU()
  */
-ModbusRTU::ModbusRTU(uint8_t u8id, uint8_t u8serno)
+ModbusRTU::ModbusRTU(uint8_t u8id)
 {
-	init(u8id, u8serno, 0);
-}
-
-/**
- * @brief
- * Full constructor for a Master/Slave through USB/RS232C/RS485
- * It needs a pin for flow control only for RS485 mode
- *
- * @param u8id   node address 0=master, 1..247=slave
- * @param u8serno  serial port used 0..3
- * @param u8txenpin pin for txen RS-485 (=0 means USB/RS232C mode)
- * @ingroup setup
- * @overload ModbusRTU::ModbusRTU(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
- * @overload ModbusRTU::ModbusRTU(uint8_t u8id)
- * @overload ModbusRTU::ModbusRTU()
- */
-ModbusRTU::ModbusRTU(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
-{
-	init(u8id, u8serno, u8txenpin);
+	init(u8id);
 }
 
 /**
@@ -102,38 +69,13 @@ ModbusRTU::ModbusRTU(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
 void ModbusRTU::begin(long u32speed)
 {
 
-	switch( u8serno )
-	{
-#if defined(UBRR1H)
-		case 1:
-			port = &Serial1;
-			break;
-#endif
-
-#if defined(UBRR2H)
-		case 2:
-			port = &Serial2;
-			break;
-#endif
-
-#if defined(UBRR3H)
-		case 3:
-			port = &Serial3;
-			break;
-#endif
-		case 0:
-		default:
-			port = &Serial;
-			break;
-	}
+	port = &Serial3;
 
 	port->begin(u32speed);
-	if (u8txenpin > 1)   // pin 0 & pin 1 are reserved for RX/TX
-	{
-		// return RS485 transceiver to transmit mode
-		pinMode(u8txenpin, OUTPUT);
-		digitalWrite(u8txenpin, LOW);
-	}
+
+	// return RS485 transceiver to transmit mode
+	//	pinMode(u8txenpin, OUTPUT);
+	//	digitalWrite(u8txenpin, LOW);
 
 	while(port->read() >= 0);
 	u8lastRec = u8BufferSize = 0;
@@ -155,38 +97,12 @@ void ModbusRTU::begin(long u32speed)
 void ModbusRTU::begin(long u32speed,uint8_t u8config)
 {
 
-	switch( u8serno )
-	{
-#if defined(UBRR1H)
-		case 1:
-			port = &Serial1;
-			break;
-#endif
-
-#if defined(UBRR2H)
-		case 2:
-			port = &Serial2;
-			break;
-#endif
-
-#if defined(UBRR3H)
-		case 3:
-			port = &Serial3;
-			break;
-#endif
-		case 0:
-		default:
-			port = &Serial;
-			break;
-	}
+	port = &Serial3;
 
 	port->begin(u32speed, u8config);
-	if (u8txenpin > 1)   // pin 0 & pin 1 are reserved for RX/TX
-	{
-		// return RS485 transceiver to transmit mode
-		pinMode(u8txenpin, OUTPUT);
-		digitalWrite(u8txenpin, LOW);
-	}
+	// return RS485 transceiver to transmit mode
+	//	pinMode(u8txenpin, OUTPUT);
+	//	digitalWrite(u8txenpin, LOW);
 
 	while(port->read() >= 0);
 	u8lastRec = u8BufferSize = 0;
@@ -528,7 +444,6 @@ int8_t ModbusRTU::poll( uint16_t *regs, uint8_t u8size )
 	u8regsize = u8size;
 	uint8_t u8current;
 
-
 	// check if there is any incoming frame
 	u8current = port->available();
 
@@ -598,20 +513,9 @@ int8_t ModbusRTU::poll( uint16_t *regs, uint8_t u8size )
 
 /* _____PRIVATE FUNCTIONS_____________________________________________________ */
 
-void ModbusRTU::init(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
-{
-	this->u8id = u8id;
-	this->u8serno = u8serno;
-	this->u8txenpin = u8txenpin;
-	this->u16timeOut = 1000;
-	this->u32overTime = 0;
-}
-
 void ModbusRTU::init(uint8_t u8id)
 {
 	this->u8id = u8id;
-	this->u8serno = 4;
-	this->u8txenpin = 0;
 	this->u16timeOut = 1000;
 	this->u32overTime = 0;
 }
@@ -627,7 +531,7 @@ int8_t ModbusRTU::getRxBuffer()
 {
 	boolean bBuffOverflow = false;
 
-	if (u8txenpin > 1) digitalWrite( u8txenpin, LOW );
+	// digitalWrite( u8txenpin, LOW );
 
 	u8BufferSize = 0;
 	while ( port->available() )
@@ -650,9 +554,6 @@ int8_t ModbusRTU::getRxBuffer()
 /**
  * @brief
  * This method transmits au8Buffer to Serial line.
- * Only if u8txenpin != 0, there is a flow handling in order to keep
- * the RS485 transceiver in output state as long as the message is being sent.
- * This is done with UCSRxA register.
  * The CRC is appended to the buffer before starting to send it.
  *
  * @param nothing
@@ -668,26 +569,21 @@ void ModbusRTU::sendTxBuffer()
 	au8Buffer[ u8BufferSize ] = u16crc & 0x00ff;
 	u8BufferSize++;
 
-	if (u8txenpin > 1)
-	{
-		// set RS485 transceiver to transmit mode
-		digitalWrite( u8txenpin, HIGH );
-	}
+	// set RS485 transceiver to transmit mode
+	//	digitalWrite( u8txenpin, HIGH );
 
 	// transfer buffer to serial line
 	port->write( au8Buffer, u8BufferSize );
 
-	if (u8txenpin > 1)
-	{
-		// must wait transmission end before changing pin state
-		// soft serial does not need it since it is blocking
-		if (u8serno < 4)
-			port->flush();
-		// return RS485 transceiver to receive mode
-		volatile uint32_t u32overTimeCountDown = u32overTime;
-		while ( u32overTimeCountDown-- > 0);
-		digitalWrite( u8txenpin, LOW );
-	}
+	// must wait transmission end before changing pin state
+	port->flush();
+
+	volatile uint32_t u32overTimeCountDown = u32overTime;
+	while ( u32overTimeCountDown-- > 0);
+
+	// return RS485 transceiver to receive mode
+	//	digitalWrite( u8txenpin, LOW );
+
 	while(port->read() >= 0);
 
 	u8BufferSize = 0;

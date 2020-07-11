@@ -5,7 +5,7 @@
 
 #define MB_MSG_DELAY 20
 
-static ModbusRTU mb;
+static ModbusRTU mb(0);
 
 static enum {
 	MB_INIT,
