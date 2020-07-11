@@ -4,6 +4,15 @@
 #include <Print.h>
 #include <SoftwareSerial.h>
 
+#define RS485_PIN_DE      0b01000000
+#define RS485_PIN_RE      0b00100000
+#define RS485_DIR_REG     DDRJ
+#define RS485_PORT_REG    PORTJ
+#define RS485_CLEAR_DE    RS485_PORT_REG &= ~RS485_PIN_DE
+#define RS485_CLEAR_RE    RS485_PORT_REG &= ~RS485_PIN_RE
+#define RS485_SET_DE      RS485_PORT_REG |= RS485_PIN_DE
+#define RS485_SET_RE      RS485_PORT_REG |= RS485_PIN_RE
+
 enum
 {
 	RESPONSE_SIZE = 6,
@@ -74,8 +83,9 @@ void ModbusRTU::begin(long u32speed)
 	port->begin(u32speed);
 
 	// return RS485 transceiver to transmit mode
-	//	pinMode(u8txenpin, OUTPUT);
-	//	digitalWrite(u8txenpin, LOW);
+	RS485_DIR_REG |= RS485_PIN_DE | RS485_PIN_RE;
+	RS485_CLEAR_DE;
+	RS485_CLEAR_RE;
 
 	while(port->read() >= 0);
 	u8lastRec = u8BufferSize = 0;
@@ -101,8 +111,9 @@ void ModbusRTU::begin(long u32speed,uint8_t u8config)
 
 	port->begin(u32speed, u8config);
 	// return RS485 transceiver to transmit mode
-	//	pinMode(u8txenpin, OUTPUT);
-	//	digitalWrite(u8txenpin, LOW);
+	RS485_DIR_REG |= RS485_PIN_DE | RS485_PIN_RE;
+	RS485_CLEAR_DE;
+	RS485_CLEAR_RE;
 
 	while(port->read() >= 0);
 	u8lastRec = u8BufferSize = 0;
@@ -531,7 +542,8 @@ int8_t ModbusRTU::getRxBuffer()
 {
 	boolean bBuffOverflow = false;
 
-	// digitalWrite( u8txenpin, LOW );
+	RS485_CLEAR_DE;
+	RS485_CLEAR_RE;
 
 	u8BufferSize = 0;
 	while ( port->available() )
@@ -570,19 +582,24 @@ void ModbusRTU::sendTxBuffer()
 	u8BufferSize++;
 
 	// set RS485 transceiver to transmit mode
-	//	digitalWrite( u8txenpin, HIGH );
+	RS485_SET_DE;
+	RS485_SET_RE;
+
+	UCSR3A=UCSR3A |(1 << TXC3);
+
 
 	// transfer buffer to serial line
 	port->write( au8Buffer, u8BufferSize );
 
 	// must wait transmission end before changing pin state
-	port->flush();
+	while (!(UCSR3A & (1 << TXC3)));
 
 	volatile uint32_t u32overTimeCountDown = u32overTime;
 	while ( u32overTimeCountDown-- > 0);
 
 	// return RS485 transceiver to receive mode
-	//	digitalWrite( u8txenpin, LOW );
+	RS485_CLEAR_DE;
+	RS485_CLEAR_RE;
 
 	while(port->read() >= 0);
 
@@ -776,10 +793,8 @@ void ModbusRTU::get_FC1()
 		}
 		else
 		{
-
 			au16regs[i/2]= word(highByte(au16regs[i/2]), au8Buffer[i+u8byte]);
 		}
-
 	}
 }
 

@@ -3,9 +3,9 @@
 
 /**
  * @file 	ModbusRTU.h
- * @version     1.21
- * @date        2016.02.21
- * @author 	Samuel Marco i Armengol
+ * @version     1.21 (modified by CONTROLLINO team)
+ * @date        2016.02.21 (2017.03.30)
+ * @author 	Samuel Marco i Armengol (Thank you, Samuel!)
  * @contact     sammarcoarmengol@gmail.com
  * @contribution Helium6072
  * @contribution gabrielsan
