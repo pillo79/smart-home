@@ -5,6 +5,7 @@
 #include "logicdevice.h"
 
 #include "ModbusRTU.h"
+#include "anli_defs.h"
 
 class ModbusDevice : public LogicDevice {
 	public:
@@ -49,8 +50,10 @@ class Aermec_ANLI : public ModbusDevice {
 
 	private:
 		bool m_updated;
-		int16_t m_inputs[4]; // signed (negative temperatures)
-		modbus_msg_t m_readMessages[2];
+		int16_t m_regs[ANLI_REG_COUNT];
+		uint8_t m_coils[(ANLI_COIL_COUNT+7)/8];
+
+		modbus_msg_t m_pollMessages[6];
 		modbus_msg_t m_writeMessages[2];
 };
 

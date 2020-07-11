@@ -1,10 +1,6 @@
 #ifndef __ANLI_DEFS_H__
 #define __ANLI_DEFS_H__
 
-#ifdef __cplusplus__
-extern "C" {
-#endif // __cplusplus__
-
 enum ANLI_COILS {
 	ANLI_COIL_POWER_CMD = 0,
 	ANLI_COIL_HEAT_CMD = 1,
@@ -89,9 +85,5 @@ enum ANLI_REGS {
 
 extern const char * const ANLI_COIL_MSGS[ANLI_COIL_COUNT];
 extern const char * const ANLI_REG_MSGS[ANLI_REG_COUNT];
-
-#ifdef __cplusplus__
-};
-#endif // __cplusplus__
 
 #endif /* __ANLI_DEFS_H__ */

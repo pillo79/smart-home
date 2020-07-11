@@ -1,5 +1,7 @@
 #include "modbusdevice.h"
 
+#include "log.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -13,15 +15,46 @@ ModbusDevice::ModbusDevice(const char *name, int modAddress)
 {
 }
 
-
 Aermec_ANLI::Aermec_ANLI(const char *name, int modAddress)
 	: ModbusDevice(name, modAddress)
 {
+	modbus_msg_t *msg = m_pollMessages;
+	msg->u8id	= m_address;
+	msg->u8fct	= MB_FC_READ_REGISTERS;
+	msg->u16RegAdd	= 0;
+	msg->u16CoilsNo	= 20;
+	msg->au16reg	= m_regs+0;
+
+	++msg;
+	msg->u8id	= m_address;
+	msg->u8fct	= MB_FC_READ_REGISTERS;
+	msg->u16RegAdd	= 20;
+	msg->u16CoilsNo	= 20;
+	msg->au16reg	= m_regs+20;
+
+	++msg;
+	msg->u8id	= m_address;
+	msg->u8fct	= MB_FC_READ_REGISTERS;
+	msg->u16RegAdd	= 40;
+	msg->u16CoilsNo	= ANLI_REG_COUNT-40;
+	msg->au16reg	= m_regs+40;
+
+	++msg;
+	msg->u8id	= m_address;
+	msg->u8fct	= MB_FC_READ_COILS;
+	msg->u16RegAdd	= 0;
+	msg->u16CoilsNo	= ANLI_COIL_COUNT;
+	msg->au16reg	= (uint16_t *)m_coils;
+
+	++msg;
+	msg->u8fct = 0;
 }
 
 const modbus_msg_t *Aermec_ANLI::getMessages()
 {
-	return NULL;
+	lprintf("TAE: %hi\n ", m_regs[ANLI_REG_NTC5_VAL]);
+
+	return m_pollMessages;
 }
 
 int Aermec_ANLI::getDigInput(int input)
