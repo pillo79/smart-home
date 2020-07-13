@@ -7,6 +7,8 @@
 #include "ModbusRTU.h"
 #include "anli_defs.h"
 
+#include <dhtnew.h>
+
 class ModbusDevice : public LogicDevice {
 	public:
 		ModbusDevice(const char *name, int modAddress);
@@ -55,6 +57,23 @@ class Aermec_ANLI : public ModbusDevice {
 
 		modbus_msg_t m_pollMessages[6];
 		modbus_msg_t m_writeMessages[2];
+};
+
+class AM2302 : public ModbusDevice {
+	public:
+		AM2302(const char *name, int pin);
+		virtual ~AM2302() { };
+
+		virtual const modbus_msg_t *getMessages();
+
+		virtual int getInputVal(int input);
+
+		int hum() { return m_hum; }
+		int temp() { return m_temp; }
+	private:
+		int m_lastPoll;
+		DHTNEW m_sensor;
+		int m_hum, m_temp;
 };
 
 #if 0

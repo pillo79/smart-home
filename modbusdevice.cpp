@@ -84,6 +84,43 @@ int Aermec_ANLI::setOutputVal(int output, int value)
 
 
 
+AM2302::AM2302(const char *name, int pin)
+	: ModbusDevice(name, -1)
+	, m_sensor(pin)
+	, m_lastPoll(0)
+	, m_hum(0)
+	, m_temp(0)
+{
+}
+
+const modbus_msg_t *AM2302::getMessages()
+{
+	int now = millis();
+	if (now-m_lastPoll > 3000) {
+		m_lastPoll = now;
+
+		int ret = m_sensor.read();
+		if (!ret) {
+			m_hum = (int)(m_sensor.getHumidity()*10);
+			m_temp = (int)(m_sensor.getTemperature()*10);
+			lprintf("AM2302: hum %3i, temp %3i\n", m_hum, m_temp);
+		}
+	}
+
+	return NULL;
+}
+
+int AM2302::getInputVal(int input)
+{
+	switch (input)
+	{
+		case 0:		return m_temp;
+		case 1:		return m_hum;
+		default:	return -1;
+	}
+}
+
+
 
 #if 0
 

@@ -13,9 +13,12 @@ static ControllinoDevice Controllino("Controllino");
 static Aermec_ANLI Aermec_ANLI_1("heatpump", 1);
 //static Seneca_4RTD Seneca_4RTD_2("temp", 2);
 
+static AM2302 AM2302_Temp("house_temp", 42);
+
 ModbusDevice * const MODBUS_DEV_TABLE[] = {
 	&Aermec_ANLI_1,
 //	&Seneca_4RTD_2,
+	&AM2302_Temp,
 	NULL
 };
 
