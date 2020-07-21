@@ -4,6 +4,7 @@
 #include "modbusdevice.h"
 #include "controllinodevice.h"
 #include "modbus.h"
+#include "shell.h"
 
 #include <Controllino.h>
 
@@ -19,6 +20,7 @@ ModbusDevice * const MODBUS_DEV_TABLE[] = {
 	&Aermec_ANLI_1,
 //	&Seneca_4RTD_2,
 	&AM2302_Temp,
+	&ShellDeviceInstance,
 	NULL
 };
 

@@ -8,9 +8,9 @@ struct SignalDesc {
 //	int (*wr)(int pin, int val);
 };
 
-extern const SignalDesc DIGOUT_SIGS[];
-extern const SignalDesc RLYOUT_SIGS[];
-extern const SignalDesc DIGIN_SIGS[];
+extern const struct SignalDesc DIGOUT_SIGS[];
+extern const struct SignalDesc RLYOUT_SIGS[];
+extern const struct SignalDesc DIGIN_SIGS[];
 
 void pinSetup();
 const struct SignalDesc *findSig(const char *name, const struct SignalDesc *table);

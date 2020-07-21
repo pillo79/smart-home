@@ -18,5 +18,8 @@ tftp: $(NAME).elf
 	echo "@" | nc -w0 192.168.1.252 23 && sleep 3 || true
 	(echo "binary" ; echo "trace" ; echo "verbose" ; echo "put $(NAME).bin") | tftp 192.168.1.252
 
+tftpn: $(NAME).elf
+	(echo "binary" ; echo "trace" ; echo "verbose" ; echo "put $(NAME).bin") | tftp 192.168.1.252
+
 upload: $(NAME).elf
 	arduino-cli upload -v -b $(BOARD) -p $(PORT) -i $(NAME)
