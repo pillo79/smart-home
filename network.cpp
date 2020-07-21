@@ -65,7 +65,7 @@ void lprintf(const char *fmt, ...)
 
 void netSetup(void)
 {
-	static const byte mac[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 };
+	static const byte mac[] = { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB };
 	static const IPAddress ip(192, 168, 1, 252);
 	Ethernet.begin(mac, ip);
 	server.begin();
