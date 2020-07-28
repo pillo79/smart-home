@@ -129,7 +129,7 @@ static void parseLongCommand(char *cmd)
 	else if (!strcmp(cmd, "mb_read_coil")) {
 		arg_min = 2;
 		arg_max = 3;
-		arg_value[1] = 16;
+		arg_value[2] = 16;
 		fcn = &ShellDevice::cmdReadCoil;
 	}
 	else if (!strcmp(cmd, "mb_write_coil")) {
