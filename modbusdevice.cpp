@@ -15,6 +15,8 @@ ModbusDevice::ModbusDevice(const char *name, int modAddress)
 {
 }
 
+#define ANLI_GET_COIL(coil) (!! (m_coils[(coil)/8] & (1<<((coil)&7)) ) )
+
 Aermec_ANLI::Aermec_ANLI(const char *name, int modAddress)
 	: ModbusDevice(name, modAddress)
 {
@@ -52,7 +54,16 @@ Aermec_ANLI::Aermec_ANLI(const char *name, int modAddress)
 
 const modbus_msg_t *Aermec_ANLI::getMessages()
 {
-	lprintf("TAE: %hi\n ", m_regs[ANLI_REG_NTC5_VAL]);
+	lprintf("HP%s%s: %s %s %2i%% (%3i), %3i => %-3i @%i\n",
+		ANLI_GET_COIL(ANLI_COIL_PREALARM_GEN) ? " PREALARM" : "",
+		ANLI_GET_COIL(ANLI_COIL_ALARM_GEN) ? " ALARM" : "",
+		ANLI_GET_COIL(ANLI_COIL_POWER_CMD) ? "ON" : "off",
+		ANLI_GET_COIL(ANLI_COIL_COMPR1_STAT) ? "RUN" : "idle",
+		(int) m_regs[ANLI_REG_INVERTER_POWER],
+		(int) m_regs[ANLI_REG_COMPR_TIMER],
+		(int) m_regs[ANLI_REG_NTC2_VAL],
+		(int) m_regs[ANLI_REG_NTC1_VAL],
+		(int) m_regs[ANLI_REG_NTC5_VAL]);
 
 	return m_pollMessages;
 }
