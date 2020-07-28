@@ -53,7 +53,7 @@ class Aermec_ANLI : public ModbusDevice {
 	private:
 		bool m_updated;
 		int16_t m_regs[ANLI_REG_COUNT];
-		uint8_t m_coils[(ANLI_COIL_COUNT+7)/8];
+		uint8_t m_coils[2*((ANLI_COIL_COUNT+15)/16)];
 
 		modbus_msg_t m_pollMessages[6];
 		modbus_msg_t m_writeMessages[2];

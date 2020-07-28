@@ -378,6 +378,7 @@ int8_t ModbusRTU::poll()
 	if (u8exception != 0)
 	{
 		u8state = MB_COM_IDLE;
+		u8lastError = u8exception;
 		return u8exception;
 	}
 

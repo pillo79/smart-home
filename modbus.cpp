@@ -1,5 +1,6 @@
 #include "modbus.h"
 #include "modbusdevice.h"
+#include "log.h"
 
 #include <Arduino.h>
 
@@ -27,6 +28,9 @@ void modbusSetup()
 
 void modbusPoll()
 {
+	int now = millis();
+	int ret;
+
 	switch(cur_state) {
 	case MB_INIT:
 		cur_dev_idx = 0;
@@ -45,18 +49,28 @@ void modbusPoll()
 		break;
 
 	case MB_SEND_MSG:
-		if (millis()-last_millis > MB_MSG_DELAY) {
+		if ((now-last_millis) > MB_MSG_DELAY) {
 			// waited enough, send message
-			mb.query(cur_msgs[cur_msg_idx]);
+			ret = mb.query(cur_msgs[cur_msg_idx]);
+			if (ret)
+				lprintf("MB %i[%i]: query(%i,%i) %i @%08x after %i\n", cur_dev_idx, cur_msg_idx, cur_msgs[cur_msg_idx].u8id, cur_msgs[cur_msg_idx].u8fct, ret, now, now-last_millis);
+
+			last_millis = now;
 			cur_state = MB_WAIT_REPLY;
 		}
 		break;
 
 	case MB_WAIT_REPLY:
-		mb.poll();
+		ret = mb.poll();
 		if (mb.getState() == MB_COM_IDLE) {
 			// reply received
-			last_millis = millis();
+
+			if (mb.getLastError()) {
+				lprintf("MB %i[%i]: %i err %i @%08x after %i\n", cur_dev_idx, cur_msg_idx, ret, (int) mb.getLastError(), now, now-last_millis);
+//			} else {
+//				lprintf("MB %i[%i]: %i ack @%08x after %i\n", cur_dev_idx, cur_msg_idx, ret, now, now-last_millis);
+			}
+			last_millis = now;
 
 			// find next message
 			if (!cur_msgs[++cur_msg_idx].u8fct) {
