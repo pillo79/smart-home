@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <math.h>
 
 static modbus_msg_t MODBUS_NO_OP[] = { { 0 } };
 
@@ -104,6 +105,15 @@ AM2302::AM2302(const char *name, int pin)
 {
 }
 
+static double dew_pt_calc(double hum, double temp)
+{
+	const double coef_a = 17.62;
+	const double coef_b = 243.12;
+
+	double alpha = log(hum/100.0) + coef_a*temp/(coef_b+temp);
+	return coef_b*alpha/(coef_a-alpha);
+}
+
 const modbus_msg_t *AM2302::getMessages()
 {
 	int now = millis();
@@ -112,9 +122,13 @@ const modbus_msg_t *AM2302::getMessages()
 
 		int ret = m_sensor.read();
 		if (!ret) {
-			m_hum = (int)(m_sensor.getHumidity()*10);
-			m_temp = (int)(m_sensor.getTemperature()*10);
-			lprintf("AM2302: hum %3i, temp %3i\n", m_hum, m_temp);
+			double hum = m_sensor.getHumidity();
+			double temp = m_sensor.getTemperature();
+			double dew = dew_pt_calc(hum, temp);
+			m_hum = (int)(hum*10);
+			m_temp = (int)(temp*10);
+			m_dew = (int)(dew*10);
+			lprintf("AM2302: hum %3i, temp %3i, dew %3i\n", m_hum, m_temp, m_dew);
 		}
 	}
 

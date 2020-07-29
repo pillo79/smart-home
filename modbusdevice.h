@@ -70,10 +70,11 @@ class AM2302 : public ModbusDevice {
 
 		int hum() { return m_hum; }
 		int temp() { return m_temp; }
+		int dew() { return m_dew; }
 	private:
 		int m_lastPoll;
 		DHTNEW m_sensor;
-		int m_hum, m_temp;
+		int m_hum, m_temp, m_dew;
 };
 
 #if 0
