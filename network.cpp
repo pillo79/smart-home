@@ -96,6 +96,15 @@ void netLoop()
 		shell(shell_cmd);
 	}
 
+	EthernetClient client_tmp = server.accept();
+	if (client_tmp) {
+		int msglen = client_tmp.read(shell_cmd, sizeof(shell_cmd));
+		shell_cmd[msglen] = '\0';
+
+		shell(shell_cmd);
+		client_tmp.stop();
+	}
+
 	if (logRd != logWr) {
 		if (logRd > logWr) {
 			client.write(logBuf+logRd, logEob-logRd);
