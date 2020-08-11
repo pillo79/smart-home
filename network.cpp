@@ -5,8 +5,10 @@
 #include <Ethernet.h>
 #include <stdarg.h>
 
+#define MAX_CLIENTS	3
+
 EthernetServer server(23);
-EthernetClient client;
+EthernetClient clients[MAX_CLIENTS];
 
 char shell_cmd[128];
 
@@ -73,48 +75,40 @@ void netSetup(void)
 
 void netLoop()
 {
-	if (!client)
-		client = server.accept();
+	int flush_log = 0;
 
-	if (!client)
-		return;
+	for (int i=0; i<MAX_CLIENTS; ++i) {
+		if (!clients[i])
+			clients[i] = server.accept();
 
-	if (logRd != logWr) {
+		if (!clients[i])
+			continue;
+
+		if (logRd != logWr) {
+			if (logRd > logWr)
+				clients[i].write(logBuf+logRd, logEob-logRd);
+			else
+				clients[i].write(logBuf+logRd, logWr-logRd);
+			flush_log = 1;
+		}
+
+		if (clients[i].available()) {
+			int msglen = clients[i].read(shell_cmd, sizeof(shell_cmd));
+			shell_cmd[msglen] = '\0';
+
+			shell(shell_cmd);
+		}
+
+		if (!clients[i].connected())
+			clients[i].stop();
+	}
+
+	if (flush_log) {
 		if (logRd > logWr) {
-			client.write(logBuf+logRd, logEob-logRd);
 			logRd = 0;
 			logEob = LOGSIZE;
+		} else {
+			logRd = logWr;
 		}
-		client.write(logBuf+logRd, logWr-logRd);
-		logRd = logWr;
 	}
-
-	if (client.available()) {
-		int msglen = client.read(shell_cmd, sizeof(shell_cmd));
-		shell_cmd[msglen] = '\0';
-
-		shell(shell_cmd);
-	}
-
-	EthernetClient client_tmp = server.accept();
-	if (client_tmp) {
-		int msglen = client_tmp.read(shell_cmd, sizeof(shell_cmd));
-		shell_cmd[msglen] = '\0';
-
-		shell(shell_cmd);
-		client_tmp.stop();
-	}
-
-	if (logRd != logWr) {
-		if (logRd > logWr) {
-			client.write(logBuf+logRd, logEob-logRd);
-			logRd = 0;
-			logEob = LOGSIZE;
-		}
-		client.write(logBuf+logRd, logWr-logRd);
-		logRd = logWr;
-	}
-
-	if (!client.connected())
-		client.stop();
 }
